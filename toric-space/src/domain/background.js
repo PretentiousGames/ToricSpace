@@ -9,8 +9,8 @@ class Background {
         var iHeight = this.image.height;
         var iWidth = this.image.width;
 
-        var x = ((viewPort.x % iWidth) - iWidth) % iWidth;
-        var y = ((viewPort.y % iHeight) - iHeight) % iHeight;
+        var x = ((-viewPort.x % iWidth) - iWidth) % iWidth;
+        var y = ((-viewPort.y % iHeight) - iHeight) % iHeight;
 
         var cx = x;
         var cy = y;
