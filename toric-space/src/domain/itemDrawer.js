@@ -1,7 +1,7 @@
 class ItemDrawer {
     draw(item, viewPort, gameHeight, gameWidth) {
         var angleInRadians = item.a * (Math.PI / 180);
-        var biggestSize = Math.max(item.imageWidth, item.imageHeight);
+        var biggestSize = Math.max(item.spriteInfo.imageWidth, item.spriteInfo.imageHeight);
         var viewPortLeft = viewPort.x - biggestSize;
         var viewPortRight = viewPort.x + viewPort.width + biggestSize;
         var viewPortTop = viewPort.y - biggestSize;
@@ -19,10 +19,12 @@ class ItemDrawer {
             viewPort.context.translate(xt, yt);
             viewPort.context.rotate(angleInRadians);
             viewPort.context.drawImage(item.image,
-                item.offsetX, item.offSetY,
-                item.imageWidth, item.imageHeight,
-                -item.imageWidth / 2, -item.imageHeight / 2,
-                item.imageWidth, item.imageHeight);
+                item.spriteInfo.offsetX, item.spriteInfo.offsetY,
+                item.spriteInfo.imageWidth, item.spriteInfo.imageHeight,
+                -item.spriteInfo.imageWidth / 2, -item.spriteInfo.imageHeight / 2,
+                item.spriteInfo.imageWidth, item.spriteInfo.imageHeight);
+
+            if (item.drawAddons) { item.drawAddons(viewPort); }
             viewPort.context.rotate(-angleInRadians);
             viewPort.context.translate(-xt, -yt);
         }

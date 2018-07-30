@@ -4,6 +4,7 @@ import PlayerShip from '../domain/playerShip'
 import React from 'react';
 import ItemDrawer from '../domain/itemDrawer';
 import Asteroid from '../domain/asteroid';
+import Laser from '../domain/laser';
 
 class Game extends React.Component {
     constructor(props) {
@@ -29,7 +30,8 @@ class Game extends React.Component {
             const sp = that.refs.sprites;
             sp.onload = () => {
                 var items = that.state.items.slice();
-                that.state.player = new PlayerShip(sp, 0, 0, 0, 0, 0, 0);
+                that.state.player = new PlayerShip(sp, 10, 10, 0,
+                    Math.random() - .5, Math.random() - .5, Math.random() - .5);
                 items.push(that.state.player);
 
                 for (var i = 0; i < 10; i++) {
@@ -65,27 +67,60 @@ class Game extends React.Component {
     }
 
     tick(ps) {
+        ps.state &= ~ps.States.shielding;
         var vp = Object.assign({}, this.state.viewPort);
-        
+
         this.state.items.forEach(item => {
             this.updateItem(item);
         });
+        var remaining = this.state.items.filter(item => !item.destroyed);
         vp.x = ps.x - (vp.width / 2);
         vp.y = ps.y - (vp.height / 2);
 
-        this.setState({ viewPort: vp });
+        this.setState({ viewPort: vp, items: remaining });
     }
+
+    speedLimit(n) { return Math.max(-10, Math.min(10, n)); }
+    angleLimit(n) { return Math.max(-10, Math.min(10, n)); }
 
     updateItem(item) {
         if (item.av) {
             item.a += item.av;
             item.a %= 360;
+            item.av = this.angleLimit(item.av);
         }
         if (item.xv) {
             item.x = ((item.x + item.xv) % this.state.width + this.state.width) % this.state.width;
+            item.xv = this.speedLimit(item.xv);
         }
         if (item.yv) {
             item.y = ((item.y + item.yv) % this.state.height + this.state.height) % this.state.height;
+            item.yv = this.speedLimit(item.yv);
+        }
+        var ps = this.state.player;
+        if (item instanceof Asteroid) {
+            var distSq = Math.pow(item.x - ps.x, 2) + Math.pow(item.y - ps.y, 2);
+            if (distSq < Math.pow((ps.spriteInfo.maxSize + item.spriteInfo.maxSize), 2)) {
+                ps.state |= ps.States.shielding;
+                var ratio = item.mass / ps.mass;
+                ps.xv -= 75 * ratio * Math.cos(Math.atan2(item.y - ps.y, item.x - ps.x)) / distSq;
+                ps.yv -= 75 * ratio * Math.sin(Math.atan2(item.y - ps.y, item.x - ps.x)) / distSq;
+                item.xv += 100 / ratio * Math.cos(Math.atan2(item.y - ps.y, item.x - ps.x)) / distSq;
+                item.yv += 100 / ratio * Math.sin(Math.atan2(item.y - ps.y, item.x - ps.x)) / distSq;
+            }
+        }
+        else if (item instanceof Laser) {
+            this.state.items.forEach(target => {
+                if (target instanceof Asteroid) {
+                    var hitX = target.x;
+                    var hitY = target.y;
+                    var distSq = Math.pow(item.x - hitX, 2) + Math.pow(item.y - hitY, 2);
+                    if (distSq < Math.pow(item.spriteInfo.minSize + target.spriteInfo.minSize, 2)) {
+                        item.destroyed = true;
+                        target.destroyed = true;
+                    }
+                }
+            });
         }
     }
 
@@ -94,17 +129,38 @@ class Game extends React.Component {
         var ps = this.state.player;
         if (e.key === "ArrowRight") {
             ps.av += 0.5;
+            ps.state |= ps.States.turningRight;
         }
         else if (e.key === "ArrowLeft") {
             ps.av -= 0.5;
+            ps.state |= ps.States.turningLeft;
         }
         else if (e.key === "ArrowUp") {
             var angleInRadians = ps.a * (Math.PI / 180);
             ps.xv += Math.sin(angleInRadians);
             ps.yv -= Math.cos(angleInRadians);
+            ps.state |= ps.States.accellerating;
+        }
+        else if (e.key === " ") {
+            var lAngleInRadians = ps.a * (Math.PI / 180);
+            var x = ps.x + 50 * Math.sin(lAngleInRadians);
+            var y = ps.y - 50 * Math.cos(lAngleInRadians);
+            var xv = 10 * Math.sin(lAngleInRadians);
+            var yv = -10 * Math.cos(lAngleInRadians);
+            this.state.items.push(new Laser(this.refs.sprites, x, y, ps.a, xv, yv, 0));
         }
     }
     keyUp(e) {
+        var ps = this.state.player;
+        if (e.key === "ArrowRight") {
+            ps.state &= ~ps.States.turningRight;
+        }
+        else if (e.key === "ArrowLeft") {
+            ps.state &= ~ps.States.turningLeft;
+        }
+        else if (e.key === "ArrowUp") {
+            ps.state &= ~ps.States.accellerating;
+        }
     }
 
     render() {
