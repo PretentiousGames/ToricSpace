@@ -77,18 +77,13 @@ class Game extends React.Component {
         this.state.items.forEach(item => {
             if (item.destroyed) {
                 if (item instanceof Asteroid && item.mass > 1) {
-                    var xvd = Math.random() - .5;
-                    var yvd = Math.random() - .5;
-                    var avd = Math.random() - .5;
-                    remaining.push(new Asteroid(item.image, item.x, item.y, item.a, item.xv + xvd, item.yv + yvd, item.av + avd, Math.floor(item.mass / 2), item.color));
-                    var xvd2 = Math.random() - .5;
-                    var yvd2 = Math.random() - .5;
-                    var avd2 = Math.random() - .5;
-                    remaining.push(new Asteroid(item.image, item.x, item.y, item.a, item.xv + xvd2, item.yv + yvd2, item.av + avd2, Math.floor(item.mass / 2), item.color));
-                    var xvd3 = xvd + xvd2;
-                    var yvd3 = yvd + yvd2;
-                    var avd3 = avd + avd2;
-                    remaining.push(new Asteroid(item.image, item.x, item.y, item.a, item.xv - xvd3, item.yv - yvd3, item.av - avd3, Math.ceil(item.mass / 2), item.color));
+                    for (var i = 1; i < item.mass; i *= 2) {
+                        var xvd = Math.random() - .5;
+                        var yvd = Math.random() - .5;
+                        var avd = Math.random() - .5;
+                        remaining.push(new Asteroid(item.image, item.x, item.y, item.a, item.xv + xvd, item.yv + yvd, item.av + avd, Math.floor(item.mass / 2), item.color));
+                        remaining.push(new Asteroid(item.image, item.x, item.y, item.a, item.xv - xvd, item.yv - yvd, item.av - avd, Math.ceil(item.mass / 2), item.color));
+                    }
                 }
             }
             else {
